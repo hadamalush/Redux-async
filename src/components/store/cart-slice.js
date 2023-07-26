@@ -2,11 +2,9 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const initialCartState = {
 	isShowCart: false,
-	totalQuantity: 3,
-	cartItems: [
-		{ id: "i1", title: "Parrot", quantity: 1, total: 6, price: 6 },
-		{ id: "i2", title: "Stone", quantity: 2, total: 4, price: 2 },
-	],
+	totalQuantity: 0,
+	notification: null,
+	cartItems: [],
 	allProducts: [
 		{
 			id: "i1",
@@ -50,6 +48,13 @@ const cartSlice = createSlice({
 		showCart(state) {
 			state.isShowCart = !state.isShowCart;
 		},
+		showNotification(state, action) {
+			state.notification = {
+				status: action.payload.status,
+				title: action.payload.title,
+				message: action.payload.message,
+			};
+		},
 		addItemToCart(state, action) {
 			const itemId = action.payload.id;
 			const itemIndex = state.cartItems.findIndex(item => item.id === itemId);
@@ -77,6 +82,56 @@ const cartSlice = createSlice({
 		},
 	},
 });
+
+//kreator akcji - wykonuje sie dopiero ,jak zostanie cos wykonane
+
+export const sendCartData = cartData => {
+	return async dispatch => {
+		dispatch(
+			cartActions.showNotification({
+				status: "pending",
+				title: "Sending",
+				message: "Application is datas sending",
+			})
+		);
+
+		const sendRequest = async () => {
+			const response = await fetch(
+				"https://react-food-app-cffd3-default-rtdb.firebaseio.com/cart.json",
+				{
+					method: "PUT",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify(cartData),
+				}
+			);
+			if (!response.ok) {
+				throw new Error("Sending cart data failed");
+			}
+		};
+
+		try {
+			await sendRequest();
+
+			dispatch(
+				cartActions.showNotification({
+					status: "success",
+					title: "Success!",
+					message: "Cart has been updated",
+				})
+			);
+		} catch (error) {
+			dispatch(
+				cartActions.showNotification({
+					status: "error",
+					title: "Error!",
+					message: "Cart has not been updated",
+				})
+			);
+		}
+	};
+};
 
 export const cartActions = cartSlice.actions;
 export default cartSlice.reducer;
